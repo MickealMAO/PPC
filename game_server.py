@@ -27,8 +27,10 @@ def socket_handler(player_socket, address, active_players):
         player_socket.close()
         active_players.remove(player_socket)
 
-def server_process(host, port):
-    """Run the server process."""
+
+if __name__ == "__main__":
+    host = "localhost"
+    port = 2050
     active_players = []
 
     print("Starting server...")
@@ -48,13 +50,5 @@ def server_process(host, port):
                         executor.submit(socket_handler, player_socket, address, active_players)
                     else:
                         executor.submit(socket_handler, s, address, active_players)
-
-if __name__ == "__main__":
-    HOST = "localhost"
-    PORT = 2050
-
-    server_proc = multiprocessing.Process(target=server_process, args=(HOST, PORT))
-    server_proc.start()
-    server_proc.join() 
 
 
