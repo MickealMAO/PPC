@@ -1,18 +1,22 @@
 import socket
 import threading
+import json
 
 def receive_messages(sock):
-    """receive and print messages from the server"""
+    """receive messages from the server"""
     while True:
         try:
             data = sock.recv(1024).decode()
             if data:
                 print(f"{data}")
+                if data.strip().endswith("(Please type it in terminal.)"):
+                    action = input("-> ")
+                    send_message(sock, action)
             else:
                 break  
         except Exception as e:
             print(f"Error receiving data: {e}")
-            break  
+            break
 
 def send_message(sock, message):
     """send messages to the server"""
@@ -23,7 +27,7 @@ def send_message(sock, message):
 
 if __name__ == "__main__":
     host = "localhost"
-    port = 2050
+    port = 12330
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((host, port))
@@ -32,13 +36,6 @@ if __name__ == "__main__":
         # create a thread to receive messages from the server
         thread = threading.Thread(target=receive_messages, args=(client_socket,))
         thread.start()
-
-        while True:
-            message = input("Say something to the server: ")
-            send_message(client_socket, message)
-            if message.lower() == 'quit':
-                break  # 如果输入 'quit'，退出循环
-            pass
 
         thread.join() 
 

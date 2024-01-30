@@ -9,6 +9,7 @@ class Card:
         return f"{self.color}{self.number}"
 
 def create_deck(number_of_players):
+    """Creates a deck of cards for the given number of players."""
     colors = ['Red', 'Blue', 'Green', 'Yellow', 'White'][:number_of_players]
     deck = [Card(color, number) for color in colors for number in [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]]
     random.shuffle(deck)
@@ -28,6 +29,7 @@ class GameLogic:
         return hands_display
 
     def play_card(self, player_id, card_letter):
+        """Plays a card from the given player's hand."""
         card_index = ord(card_letter.lower()) - ord('a')
         hand = self.shared_hands[player_id]
         # Check if the card index is valid
@@ -51,14 +53,19 @@ class GameLogic:
 
     def is_play_valid(self, card):
         """Checks if the played card is valid according to game rules."""
+        if not self.played_cards:
+            return card.number == 1
         if card.number == 1:
             return not any(c.color == card.color and c.number == 1 for c in self.played_cards)
         if card.number > 1:
             last_card_played = self.played_cards[-1]
+            print(f"Last card played: {last_card_played}")
+            print(f"Played card: {card}")
             return card.number == last_card_played.number + 1
         return False  
 
     def is_game_over(self):
+        """Checks if the game is over."""
         num_fives = sum(1 for card in self.played_cards if card.number == 5)
         if num_fives == self.number_of_players:
             print("Game Won - All 5s have been played successfully.")
@@ -79,6 +86,7 @@ class GameLogic:
     
 
     def give_information(self, current_player_id):
+        """Gives information to another player."""
         if self.shared_tokens['info_tokens'] <= 0:
             print("No information tokens available.")
             return
@@ -125,6 +133,7 @@ class GameLogic:
         return ['Red', 'Blue', 'Green', 'Yellow', 'White'][:self.number_of_players]
 
     def get_information_type(self):
+        """Gets and validates the information type."""
         valid_colors = self.get_valid_colors()
         while True:
             info = input("Enter the information to give (color or number): ")
@@ -142,7 +151,7 @@ class GameLogic:
             for player_id in range(1, self.number_of_players + 1):
                 print(f"\nPlayer {player_id}'s turn.")
                 print(f"Information tokens: {self.shared_tokens['info_tokens']}, Fuse tokens: {self.shared_tokens['fuse_tokens']}")
-                print("Other players' hands:\n" + self.show_other_players_hands(player_id)) 
+                print("Other players' hands:\n" + self.show_other_players_hands(player_id))
 
                 action = self.get_player_action()
                 if action == "play_card" or action == "1":
