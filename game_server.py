@@ -105,7 +105,6 @@ class GameServer:
                         break
 
                     message = data.decode()
-                    print(f"Received message from player {player_id}: {message}")
                     # Detect if the player is sending a response to a request
                     with self.lock:
                         self.player_responses[player_id] = message
