@@ -20,13 +20,14 @@ class GameServer:
 
     def start(self):
         print("Starting server...")
+        print(f"Waiting for {self.num_players} players to connect...")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.setblocking(False)
             server_socket.bind((self.host, self.port))
             server_socket.listen(self.num_players)
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_players) as executor:
-                while True:
+                while self.players_connected < self.num_players:
                     readable, _, _ = select.select([server_socket] + list(self.player_ids.values()), [], [])
                     for s in readable:
                         if s is server_socket:
@@ -36,12 +37,11 @@ class GameServer:
                             executor.submit(self.handle_player, player_socket, self.next_player_id)
                             with self.lock:
                                 self.players_connected += 1
+                                print('there are ' + str(self.players_connected) + ' players connected')
                                 if self.players_connected == self.num_players:
+                                    print('all players connected')
                                     self.all_players_connected.notify_all()
                             self.next_player_id += 1
-                        else:
-                            player_id = [id for id, socket in self.player_ids.items() if socket == s][0]
-                            executor.submit(self.handle_player, s, player_id)
 
                 # 等待所有玩家连接
                 with self.lock:
@@ -62,34 +62,43 @@ class GameServer:
 
         # Start the rounds
         while not self.game_logic.is_game_over():
-            self.broadcast(f"\n--- Round {self.game_logic.round} ---")
+            self.broadcast(f"\n--- Round {self.game_logic.round} ---\n")
             for player_id in range(1, self.num_players + 1):
-                self.broadcast(f"\nPlayer {player_id}'s turn.")
-                self.broadcast(f"Information tokens: {self.game_logic.shared_tokens['info_tokens']}, Fuse tokens: {self.game_logic.shared_tokens['fuse_tokens']}")
+                self.broadcast(f"Player {player_id}'s turn.\n")
+                self.broadcast(f"Information tokens: {self.game_logic.shared_tokens['info_tokens']}, Fuse tokens: {self.game_logic.shared_tokens['fuse_tokens']}\n")
 
                 # Send each player their view of other players' hands
                 for view_id in range(1, self.num_players + 1):
                     hands_info = self.game_logic.show_other_players_hands(view_id)
-                    self.send_message_to_player(view_id, "Other players' hands:\n" + hands_info)
-
+                    self.send_message_to_player(view_id, f"Other players' hands:\n{hands_info}\n")
+                    
                 # 等待并处理玩家响应
                 # ...
 
                 if self.game_logic.is_game_over():
                     break
             self.game_logic.round += 1
+            i += 1
         self.broadcast("Game concluded.")
 
 
     def handle_player(self, player_socket, player_id):
         try:
             while not self.game_logic.is_game_over():
-                data = player_socket.recv(1024).decode()
-                if not data:
-                    break
-                print(f"Received from player {player_id}: {data}")
+                try:
+                    data = player_socket.recv(1024)
+                    if not data:
+                        break  
 
-                # TODO: 处理数据，执行游戏逻辑
+                    print(f"Received from player {player_id}: {data}")
+
+                    # 处理玩家的响应 todo
+
+                except socket.error as e:
+                    if e.errno in (errno.EWOULDBLOCK, errno.EAGAIN):
+                        continue
+                    else:
+                        raise e
 
         except Exception as e:
             print(f"Error in handling player socket {player_id}: {e}")
@@ -100,6 +109,7 @@ class GameServer:
 
 
     def broadcast(self, message):
+        formatted_message = message.strip() + "\n\n"
         with self.lock:
             for player_socket in self.player_ids.values():
                 try:
@@ -108,6 +118,7 @@ class GameServer:
                     print(f"Error broadcasting to player {player_socket}: {e}")
     
     def send_message_to_player(self, player_id, message):
+        formatted_message = message.strip() + "\n\n"
         try:
             self.player_ids[player_id].sendall(message.encode())
         except Exception as e:
@@ -128,5 +139,5 @@ class GameServer:
 # Example usage
 if __name__ == "__main__":
     num_players = h.get_number_of_players()
-    server = GameServer("localhost", 2050, num_players)
+    server = GameServer("localhost", 2120, num_players)
     server.start()

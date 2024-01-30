@@ -59,6 +59,7 @@ class GameServer:
 
 
 
+
     def update_and_broadcast(self):
         # 每轮开始时广播当前轮数和令牌数量
         round_info = {
