@@ -142,7 +142,7 @@ class GameLogic:
             for player_id in range(1, self.number_of_players + 1):
                 print(f"\nPlayer {player_id}'s turn.")
                 print(f"Information tokens: {self.shared_tokens['info_tokens']}, Fuse tokens: {self.shared_tokens['fuse_tokens']}")
-                print("Other players' hands:\n" + self.show_other_players_hands(player_id))
+                print("Other players' hands:\n" + self.show_other_players_hands(player_id)) 
 
                 action = self.get_player_action()
                 if action == "play_card" or action == "1":
